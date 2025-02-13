@@ -3,6 +3,7 @@ import { i18n } from '@osd/i18n';
 import { FormattedMessage } from '@osd/i18n/react';
 
 import {
+  EuiBasicTable, EuiButton,
   EuiHorizontalRule,
   EuiPage,
   EuiPageBody,
@@ -21,6 +22,25 @@ export const ClusterPage: React.FC<DataPrepperAppDeps> = ({
   const {clusterId} = useParams<{ clusterId: string }>();
 
   const [cluster, setCluster] = useState<DataPrepperClusterDetails | undefined>();
+
+  const onShutdownClickHandler = () => {
+    http.post(`/api/data_prepper/clusters/${clusterId}/shutdown`).then((res) => {
+      setCluster(res.cluster);
+      // Use the core notifications service to display a success message.
+      notifications.toasts.addSuccess(
+        i18n.translate('dataPrepper.shutdownCluster', {
+          defaultMessage: 'Data Prepper shutdown',
+        })
+      );
+    })
+      .catch(() => {
+        notifications.toasts.addDanger(
+          i18n.translate('dataPrepper.shutdownCluster', {
+            defaultMessage: 'Failed to shutdown',
+          })
+        );
+      });
+  };
 
 
   useEffect(() => {
@@ -45,6 +65,10 @@ export const ClusterPage: React.FC<DataPrepperAppDeps> = ({
 
     getCluster();
   }, []);
+
+  const pipelineColumns = [
+    {field: 'name', name: 'Name'}
+  ];
 
 
   // Render the application DOM.
@@ -76,6 +100,14 @@ export const ClusterPage: React.FC<DataPrepperAppDeps> = ({
               </p>
             </EuiText>
             <EuiHorizontalRule/>
+            <EuiBasicTable items={cluster ? cluster.pipelines : []} columns={pipelineColumns}/>
+            <EuiButton type="primary" size="s" onClick={onShutdownClickHandler}>
+              <FormattedMessage
+                id="dataPrepper.buttonText"
+                defaultMessage="Shutdown Cluster"
+              />
+            </EuiButton>
+
           </EuiPageContentBody>
         </EuiPageContent>
       </EuiPageBody>
