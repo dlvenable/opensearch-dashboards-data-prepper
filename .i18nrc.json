@@ -1,0 +1,7 @@
+{
+  "prefix": "dataPrepper",
+  "paths": {
+    "dataPrepper": "."
+  },
+  "translations": ["translations/ja-JP.json"]
+}
