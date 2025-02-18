@@ -1,6 +1,7 @@
 import { IRouter } from '../../../../src/core/server';
 import { schema } from "@osd/config-schema";
 import * as http from 'http';
+import { loadClusters, loadDataPrepperCluster } from "../cluster/cluster_load";
 
 export function defineRoutes(router: IRouter) {
   router.get(
@@ -9,14 +10,15 @@ export function defineRoutes(router: IRouter) {
       validate: false,
     },
     async (context, request, response) => {
+      const openSearchClient = context.core.opensearch.client;
+
+      const clusters = await loadClusters({
+        openSearchClient: openSearchClient
+      })
+
       return response.ok({
         body: {
-          clusters: [
-            {
-              clusterId: 'cluster1',
-              endpoint: 'http://localhost:4900'
-            }
-          ]
+          clusters: clusters
         },
       });
     }
@@ -32,13 +34,17 @@ export function defineRoutes(router: IRouter) {
       },
     },
     async (context, request, response) => {
-      const endpoint = 'http://localhost:4900';
+      const dataPrepperCluster = await loadDataPrepperCluster({
+        openSearchClient: context.core.opensearch.client,
+        clusterId: request.params.clusterId
+      });
+      const endpoint = dataPrepperCluster.endpoint;
       const pipelines = await getPipelines(endpoint);
       return response.ok({
         body: {
           cluster:
             {
-              clusterId: 'cluster1',
+              clusterId: dataPrepperCluster.clusterId,
               endpoint: endpoint,
               ...pipelines
             }
@@ -57,7 +63,11 @@ export function defineRoutes(router: IRouter) {
       },
     },
     async (context, request, response) => {
-      const endpoint = 'http://localhost:4900';
+      const dataPrepperCluster = await loadDataPrepperCluster({
+        openSearchClient: context.core.opensearch.client,
+        clusterId: request.params.clusterId
+      });
+      const endpoint = dataPrepperCluster.endpoint;
       await shutdownPipelines(endpoint);
       return response.ok({
         body: {
